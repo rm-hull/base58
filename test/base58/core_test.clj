@@ -26,16 +26,16 @@
     [base58.core :refer :all]))
 
 (deftest check-leading-zeros
-  (is (= 0 (leading-zeros nil)))
-  (is (= 0 (leading-zeros "hello world")))
-  (is (= 0 (leading-zeros "hello\000world")))
-  (is (= 3 (leading-zeros "\000\000\000hello world"))))
+  (is (= 0 (count-leading zero? nil)))
+  (is (= 0 (count-leading zero? "hello world")))
+  (is (= 0 (count-leading zero? "hello\000world")))
+  (is (= 3 (count-leading zero? "\000\000\000hello world"))))
 
 (deftest check-string->bigint
-  (is (= 0 (string->bigint nil)))
-  (is (= 0 (string->bigint "")))
-  (is (= 104M (string->bigint "h")))
-  (is (= (+ 101M (* 256 104)) (string->bigint "he"))))
+  (is (= 0 (string->bigint 256 byte nil)))
+  (is (= 0 (string->bigint 256 byte "")))
+  (is (= 104M (string->bigint 256 byte "h")))
+  (is (= (+ 101M (* 256 104)) (string->bigint 256 byte "he"))))
 
 (deftest check-encoding
   (is (= "" (encode nil)))
@@ -43,4 +43,8 @@
   (is (= "StV1DL6CwTryKyV" (encode "hello world")))
   (is (= "11StV1DL6CwTryKyV" (encode "\000\000hello world"))))
 
-
+(deftest check-decoding
+  (is (= "" (decode nil)))
+  (is (= "" (decode "")))
+  (is (= "hello world" (decode "StV1DL6CwTryKyV")))
+  (is (= "\000\000hello world" (decode "11StV1DL6CwTryKyV"))))

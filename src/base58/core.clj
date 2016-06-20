@@ -24,35 +24,50 @@
 
 (def alphabet (vec "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"))
 
-(defn leading-zeros [s]
+(def inverted-alphabet
+  (into {}
+    (map #(vector %1 %2)
+      alphabet
+      (iterate inc 0))))
+
+(defn count-leading [pred s]
   (->>
     s
     (map byte)
-    (take-while zero?)
+    (take-while pred)
     count))
 
-(defn string->bigint [s]
+(defn string->bigint [base xform s]
   (reduce +
-    (map #(* (byte %1) %2)
+    (map #(* (xform %1) %2)
       (reverse s)
-      (iterate (partial * 256M) 1M))))
+      (iterate (partial * base) 1M))))
 
 (def divmod (juxt quot mod))
 
-(defn base-emitter [value]
+(def first-char? (partial = (byte (first alphabet))))
+
+(defn emitter [base value]
   (if (pos? value)
-    (let [[d m] (divmod value 58)]
+    (let [[d m] (divmod value base)]
       (cons
         (int m)
-        (lazy-seq (base-emitter d))))))
+        (lazy-seq (emitter base d))))))
 
-(defn encode [s]
+(defn pipeline [from to xform map-fn drop-pred replace-ch s]
   (->>
-    (string->bigint s)
-    base-emitter
-    (map alphabet)
+    s
+    (string->bigint from xform)
+    (emitter to)
+    (map map-fn)
     reverse
-    (concat (repeat (leading-zeros s) (first alphabet)))
+    (concat (repeat (count-leading drop-pred s) replace-ch))
     (apply str)))
 
-;; TODO - decode
+(defn encode [value]
+  (pipeline 256 58 byte alphabet zero? (first alphabet) value))
+
+(defn decode [value]
+  (->>
+    (drop-while first-char? value)
+    (pipeline 58 256 inverted-alphabet char first-char? "\000")))
